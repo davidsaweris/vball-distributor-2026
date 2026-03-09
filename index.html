@@ -16,63 +16,74 @@
         .tier-box h3 { margin: 0 0 8px 0; font-size: 12px; text-transform: uppercase; color: #718096; }
         
         .player-item { 
-            background: #007aff; color: white; padding: 10px; 
-            margin: 5px 0; border-radius: 6px; cursor: pointer; 
+            background: #007aff; color: white; padding: 12px; 
+            margin: 5px 0; border-radius: 8px; cursor: pointer; 
             font-size: 14px; font-weight: bold; touch-action: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         button { 
             background: #28a745; color: white; border: none; padding: 15px; 
             width: 100%; border-radius: 10px; font-size: 18px; font-weight: bold; 
-            margin: 20px 0; cursor: pointer;
+            margin: 10px 0; cursor: pointer;
         }
 
-        /* Results & Swap Styling */
+        .secondary-btn { background: #6c757d; font-size: 16px; }
+        .copy-btn { background: #007aff; }
+        .replace-btn { background: #d9534f; }
+        .swap-btn { background: #ff9500; margin-top: 10px; }
+
         .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .team-card { background: white; border-top: 4px solid #007aff; padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-height: 100px; }
+        .team-card { background: white; border-top: 4px solid #28a745; padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-height: 100px; }
         
         .swap-section { background: #fff; padding: 15px; border-radius: 10px; margin-top: 20px; border: 1px solid #ddd; }
-        select { width: 100%; padding: 10px; margin: 5px 0; border-radius: 5px; font-size: 16px; }
-        .swap-btn { background: #ff9500; margin-top: 10px; }
+        select { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; font-size: 16px; background: #fff; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
 
     <h2>🏐 Vball Team Balancer</h2>
-    <p class="instruction">1. Paste names -> 2. Drag to Tiers -> 3. Balance</p>
 
-    <textarea id="nameInput" placeholder="Paste names here (comma separated)..." oninput="updateList()"></textarea>
+    <div id="tier-view">
+        <textarea id="nameInput" placeholder="Paste names here (comma separated)..." oninput="updateList()"></textarea>
 
-    <div id="unassigned" class="tier-box" style="margin-top:20px; border-style: solid; border-color: #007aff;">
-        <h3>Unassigned Players</h3>
-        <div id="player-pool"></div>
+        <div id="unassigned" class="tier-box" style="margin-top:20px; border-style: solid; border-color: #007aff;">
+            <h3>Unassigned Players</h3>
+            <div id="player-pool"></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="tier-box"><h3>Tier 1</h3><div id="t1"></div></div>
+            <div class="tier-box"><h3>Tier 2</h3><div id="t2"></div></div>
+            <div class="tier-box"><h3>Tier 3</h3><div id="t3"></div></div>
+            <div class="tier-box"><h3>Tier 4</h3><div id="t4"></div></div>
+            <div class="tier-box"><h3>Tier 5</h3><div id="t5"></div></div>
+            <div class="tier-box"><h3>Tier 6</h3><div id="t6"></div></div>
+        </div>
+        <div class="tier-box"><h3>Tier 7 (Beginner)</h3><div id="t7"></div></div>
+
+        <button onclick="generateTeams()">Generate 4 Teams</button>
     </div>
-
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-        <div class="tier-box"><h3>Tier 1</h3><div id="t1"></div></div>
-        <div class="tier-box"><h3>Tier 2</h3><div id="t2"></div></div>
-        <div class="tier-box"><h3>Tier 3</h3><div id="t3"></div></div>
-        <div class="tier-box"><h3>Tier 4</h3><div id="t4"></div></div>
-        <div class="tier-box"><h3>Tier 5</h3><div id="t5"></div></div>
-        <div class="tier-box"><h3>Tier 6</h3><div id="t6"></div></div>
-    </div>
-    <div class="tier-box"><h3>Tier 7 (Beginner)</h3><div id="t7"></div></div>
-
-    <button onclick="generateTeams()">Generate 4 Teams</button>
 
     <div id="final-area" style="display:none;">
+        <h3>Final Teams</h3>
         <div id="results" class="team-grid"></div>
 
         <div class="swap-section">
-            <h4 style="margin:0 0 10px 0;">Manual Swap Override</h4>
+            <h4 style="margin:0 0 10px 0;">Manual Swap</h4>
             <select id="swapA"></select>
             <select id="swapB"></select>
             <button class="swap-btn" onclick="executeSwap()">Swap These Two</button>
         </div>
+
+        <button class="copy-btn" onclick="copyTeams()">📋 Copy Teams for Text</button>
+        <button class="replace-btn" onclick="replacePlayerPrompt()">🔄 Replace Player (Cancellations)</button>
+        <button class="secondary-btn" onclick="backToTiers()">⬅️ Back to Tiers</button>
     </div>
 
     <script>
         let currentTeams = [[], [], [], []];
+        const zones = ['player-pool', 't1', 't2', 't3', 't4', 't5', 't6', 't7'];
 
         function updateList() {
             const pool = document.getElementById('player-pool');
@@ -86,7 +97,6 @@
             });
         }
 
-        const zones = ['player-pool', 't1', 't2', 't3', 't4', 't5', 't6', 't7'];
         zones.forEach(id => {
             new Sortable(document.getElementById(id), { group: 'vball', animation: 150 });
         });
@@ -110,6 +120,7 @@
                 });
             });
 
+            document.getElementById('tier-view').style.display = 'none';
             renderTeams();
         }
 
@@ -129,27 +140,64 @@
                 resDiv.appendChild(card);
 
                 team.forEach(p => {
-                    let opt = new Option(p + " (Team " + (i+1) + ")", p);
+                    let opt = new Option(p, p);
                     selectA.add(opt.cloneNode(true));
                     selectB.add(opt.cloneNode(true));
                 });
             });
-            window.scrollTo(0, document.body.scrollHeight);
+            window.scrollTo(0, 0);
         }
 
         function executeSwap() {
             const p1 = document.getElementById('swapA').value;
             const p2 = document.getElementById('swapB').value;
-            
             let t1, idx1, t2, idx2;
             currentTeams.forEach((team, tIdx) => {
                 if(team.indexOf(p1) > -1) { t1 = tIdx; idx1 = team.indexOf(p1); }
                 if(team.indexOf(p2) > -1) { t2 = tIdx; idx2 = team.indexOf(p2); }
             });
-
             currentTeams[t1][idx1] = p2;
             currentTeams[t2][idx2] = p1;
             renderTeams();
+        }
+
+        function replacePlayerPrompt() {
+            const oldPlayer = prompt("Who is leaving?");
+            if (!oldPlayer) return;
+            const newPlayer = prompt("Who is the new player?");
+            if (!newPlayer) return;
+
+            // Search all zones (Unassigned + Tiers 1-7)
+            zones.forEach(id => {
+                const list = document.getElementById(id);
+                Array.from(list.children).forEach(item => {
+                    if (item.innerText.toLowerCase() === oldPlayer.toLowerCase()) {
+                        item.innerText = newPlayer;
+                    }
+                });
+            });
+            
+            // Also update the original Textarea
+            let names = document.getElementById('nameInput').value.split(',');
+            names = names.map(n => n.trim().toLowerCase() === oldPlayer.toLowerCase() ? newPlayer : n.trim());
+            document.getElementById('nameInput').value = names.join(', ');
+
+            alert(oldPlayer + " has been replaced by " + newPlayer + ". You are back in Tier View to shuffle.");
+            backToTiers();
+        }
+
+        function backToTiers() {
+            document.getElementById('final-area').style.display = 'none';
+            document.getElementById('tier-view').style.display = 'block';
+            window.scrollTo(0, 0);
+        }
+
+        function copyTeams() {
+            let text = "🏐 TONIGHT'S TEAMS 🏐\n\n";
+            currentTeams.forEach((team, i) => {
+                text += `TEAM ${i+1}:\n${team.join('\n')}\n\n`;
+            });
+            navigator.clipboard.writeText(text).then(() => alert("Teams copied!"));
         }
     </script>
 </body>
