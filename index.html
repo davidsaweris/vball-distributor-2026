@@ -3,26 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Volleyball Tier Drafter</title>
+    <title>Volleyball Team Balancer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
-        body { font-family: -apple-system, system-ui, sans-serif; background: #f4f7f9; padding: 15px; margin: 0; }
-        h2 { color: #1a1a1a; text-align: center; }
-        textarea { width: 100%; height: 80px; border-radius: 8px; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; }
+        body { font-family: -apple-system, sans-serif; background: #f0f2f5; padding: 15px; margin: 0; padding-bottom: 50px; }
+        h2 { text-align: center; color: #1a1a1a; margin-bottom: 5px; }
+        .instruction { text-align: center; color: #666; font-size: 14px; margin-bottom: 20px; }
         
-        .section-label { font-weight: bold; margin-top: 20px; display: block; color: #555; }
+        textarea { width: 100%; height: 60px; border-radius: 8px; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; font-size: 16px; }
         
-        /* Drag Zones */
-        .tier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .tier-box { background: white; border: 2px dashed #cbd5e0; border-radius: 10px; min-height: 80px; padding: 10px; }
-        .tier-box h3 { margin: 0 0 8px 0; font-size: 14px; text-transform: uppercase; color: #718096; }
-        .full-width { grid-column: span 2; }
-
-        /* Player Tags */
+        .tier-box { background: white; border: 2px dashed #cbd5e0; border-radius: 10px; min-height: 60px; padding: 10px; margin-bottom: 10px; }
+        .tier-box h3 { margin: 0 0 8px 0; font-size: 12px; text-transform: uppercase; color: #718096; }
+        
         .player-item { 
-            background: #007aff; color: white; padding: 8px 12px; 
-            margin: 4px 0; border-radius: 6px; cursor: pointer; 
-            font-size: 14px; font-weight: 500; touch-action: none;
+            background: #007aff; color: white; padding: 10px; 
+            margin: 5px 0; border-radius: 6px; cursor: pointer; 
+            font-size: 14px; font-weight: bold; touch-action: none;
         }
 
         button { 
@@ -31,39 +27,53 @@
             margin: 20px 0; cursor: pointer;
         }
 
-        .team-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .team-card { background: #fff; border-left: 5px solid #28a745; padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        /* Results & Swap Styling */
+        .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .team-card { background: white; border-top: 4px solid #007aff; padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-height: 100px; }
+        
+        .swap-section { background: #fff; padding: 15px; border-radius: 10px; margin-top: 20px; border: 1px solid #ddd; }
+        select { width: 100%; padding: 10px; margin: 5px 0; border-radius: 5px; font-size: 16px; }
+        .swap-btn { background: #ff9500; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <h2>🏐 Tier Balancer</h2>
+    <h2>🏐 Vball Team Balancer</h2>
+    <p class="instruction">1. Paste names -> 2. Drag to Tiers -> 3. Balance</p>
 
-    <label class="section-label">1. Paste Names (separated by commas)</label>
-    <textarea id="nameInput" placeholder="John, Sarah, Mike, Dave..." oninput="updateList()"></textarea>
+    <textarea id="nameInput" placeholder="Paste names here (comma separated)..." oninput="updateList()"></textarea>
 
-    <label class="section-label">2. Drag Names into Tiers</label>
-    <div id="unassigned" class="tier-box full-width">
-        <h3>Unassigned</h3>
+    <div id="unassigned" class="tier-box" style="margin-top:20px; border-style: solid; border-color: #007aff;">
+        <h3>Unassigned Players</h3>
         <div id="player-pool"></div>
     </div>
 
-    <div class="tier-grid">
-        <div class="tier-box"><h3>Tier 1</h3><div id="t1" class="tier-list"></div></div>
-        <div class="tier-box"><h3>Tier 2</h3><div id="t2" class="tier-list"></div></div>
-        <div class="tier-box"><h3>Tier 3</h3><div id="t3" class="tier-list"></div></div>
-        <div class="tier-box"><h3>Tier 4</h3><div id="t4" class="tier-list"></div></div>
-        <div class="tier-box"><h3>Tier 5</h3><div id="t5" class="tier-list"></div></div>
-        <div class="tier-box"><h3>Tier 6</h3><div id="t6" class="tier-list"></div></div>
-        <div class="tier-box full-width"><h3>Tier 7 (Beginner)</h3><div id="t7" class="tier-list"></div></div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="tier-box"><h3>Tier 1</h3><div id="t1"></div></div>
+        <div class="tier-box"><h3>Tier 2</h3><div id="t2"></div></div>
+        <div class="tier-box"><h3>Tier 3</h3><div id="t3"></div></div>
+        <div class="tier-box"><h3>Tier 4</h3><div id="t4"></div></div>
+        <div class="tier-box"><h3>Tier 5</h3><div id="t5"></div></div>
+        <div class="tier-box"><h3>Tier 6</h3><div id="t6"></div></div>
+    </div>
+    <div class="tier-box"><h3>Tier 7 (Beginner)</h3><div id="t7"></div></div>
+
+    <button onclick="generateTeams()">Generate 4 Teams</button>
+
+    <div id="final-area" style="display:none;">
+        <div id="results" class="team-grid"></div>
+
+        <div class="swap-section">
+            <h4 style="margin:0 0 10px 0;">Manual Swap Override</h4>
+            <select id="swapA"></select>
+            <select id="swapB"></select>
+            <button class="swap-btn" onclick="executeSwap()">Swap These Two</button>
+        </div>
     </div>
 
-    <button onclick="generateTeams()">3. Create 4 Balanced Teams</button>
-
-    <div id="results" class="team-container"></div>
-
     <script>
-        // Update list when typing
+        let currentTeams = [[], [], [], []];
+
         function updateList() {
             const pool = document.getElementById('player-pool');
             const names = document.getElementById('nameInput').value.split(',').filter(n => n.trim() !== "");
@@ -76,47 +86,70 @@
             });
         }
 
-        // Initialize Drag and Drop
         const zones = ['player-pool', 't1', 't2', 't3', 't4', 't5', 't6', 't7'];
         zones.forEach(id => {
-            new Sortable(document.getElementById(id), {
-                group: 'vball',
-                animation: 150,
-                ghostClass: 'bg-blue-100'
-            });
+            new Sortable(document.getElementById(id), { group: 'vball', animation: 150 });
         });
 
-        // Snake Draft Balancing
         function generateTeams() {
             let tiers = [];
             for(let i=1; i<=7; i++) {
-                const names = Array.from(document.getElementById(`t${i}`).children).map(el => el.innerText);
-                tiers.push(names);
+                tiers.push(Array.from(document.getElementById(`t${i}`).children).map(el => el.innerText));
             }
 
-            let teams = [[], [], [], []];
-            let teamIdx = 0;
-            let direction = 1;
+            currentTeams = [[], [], [], []];
+            let teamIdx = 0, direction = 1;
 
             tiers.forEach(tier => {
-                tier.sort(() => Math.random() - 0.5); // Randomize within tier
+                tier.sort(() => Math.random() - 0.5);
                 tier.forEach(player => {
-                    teams[teamIdx].push(player);
+                    currentTeams[teamIdx].push(player);
                     teamIdx += direction;
                     if(teamIdx > 3) { teamIdx = 3; direction = -1; }
                     else if(teamIdx < 0) { teamIdx = 0; direction = 1; }
                 });
             });
 
+            renderTeams();
+        }
+
+        function renderTeams() {
+            document.getElementById('final-area').style.display = 'block';
             const resDiv = document.getElementById('results');
             resDiv.innerHTML = '';
-            teams.forEach((team, i) => {
+            
+            const selectA = document.getElementById('swapA');
+            const selectB = document.getElementById('swapB');
+            selectA.innerHTML = ''; selectB.innerHTML = '';
+
+            currentTeams.forEach((team, i) => {
                 const card = document.createElement('div');
                 card.className = 'team-card';
-                card.innerHTML = `<b>Team ${i+1}</b><br>${team.join('<br>') || 'Empty'}`;
+                card.innerHTML = `<b>Team ${i+1}</b><br><small>${team.join('<br>') || 'Empty'}</small>`;
                 resDiv.appendChild(card);
+
+                team.forEach(p => {
+                    let opt = new Option(p + " (Team " + (i+1) + ")", p);
+                    selectA.add(opt.cloneNode(true));
+                    selectB.add(opt.cloneNode(true));
+                });
             });
-            resDiv.scrollIntoView({behavior: "smooth"});
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        function executeSwap() {
+            const p1 = document.getElementById('swapA').value;
+            const p2 = document.getElementById('swapB').value;
+            
+            let t1, idx1, t2, idx2;
+            currentTeams.forEach((team, tIdx) => {
+                if(team.indexOf(p1) > -1) { t1 = tIdx; idx1 = team.indexOf(p1); }
+                if(team.indexOf(p2) > -1) { t2 = tIdx; idx2 = team.indexOf(p2); }
+            });
+
+            currentTeams[t1][idx1] = p2;
+            currentTeams[t2][idx2] = p1;
+            renderTeams();
         }
     </script>
 </body>
