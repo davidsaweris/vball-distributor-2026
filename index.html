@@ -8,12 +8,9 @@
     <style>
         body { font-family: -apple-system, sans-serif; background: #f0f2f5; padding: 15px; margin: 0; padding-bottom: 50px; }
         h2 { text-align: center; color: #1a1a1a; margin-bottom: 5px; }
-        
         textarea { width: 100%; height: 60px; border-radius: 8px; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; font-size: 16px; }
-        
         .tier-box { background: white; border: 2px dashed #cbd5e0; border-radius: 10px; min-height: 80px; padding: 10px; margin-bottom: 10px; }
         .tier-box h3 { margin: 0 0 8px 0; font-size: 12px; text-transform: uppercase; color: #718096; }
-        
         .player-item {
             background: #007aff; color: white; padding: 10px;
             margin: 5px 0; border-radius: 8px; cursor: pointer;
@@ -21,28 +18,20 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             display: flex; justify-content: space-between; align-items: center;
         }
-
         .player-pts {
             width: 45px; background: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.5);
             color: white; border-radius: 4px; padding: 2px; text-align: center; font-size: 12px; font-weight: bold;
         }
-
-        button {
-            background: #28a745; color: white; border: none; padding: 15px;
-            width: 100%; border-radius: 10px; font-size: 18px; font-weight: bold;
-            margin: 10px 0; cursor: pointer;
-        }
-
+        button { background: #28a745; color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-size: 18px; font-weight: bold; margin: 10px 0; cursor: pointer; }
         .secondary-btn { background: #6c757d; font-size: 16px; }
         .copy-btn { background: #007aff; }
         .replace-btn { background: #d9534f; }
         .swap-btn { background: #ff9500; margin-top: 10px; }
+        .util-btn { background: #17a2b8; font-size: 14px; margin: 5px 0; }
         .clear-btn { background: #dc3545; margin-top: 30px; border: 2px solid #a71d2a; }
-
         .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
         .team-card { background: white; border-top: 4px solid #28a745; padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-height: 120px; }
         .team-score { font-size: 11px; background: #333; color: #fff; padding: 2px 6px; border-radius: 4px; float: right; font-weight: bold; }
-        
         .swap-section { background: #fff; padding: 15px; border-radius: 10px; margin-top: 20px; border: 1px solid #ddd; }
         select { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; font-size: 16px; background: #fff; border: 1px solid #ccc; }
     </style>
@@ -70,20 +59,24 @@
         <div class="tier-box" data-pts="1"><h3>Tier 7 (1pt)</h3><div id="t7"></div></div>
 
         <button onclick="generateTeams()">Generate Balanced Teams</button>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <button class="util-btn" onclick="exportData()">📤 Export Code</button>
+            <button class="util-btn" onclick="importData()">📥 Import Code</button>
+        </div>
+
         <button class="clear-btn" onclick="clearAllData()">🗑️ Clear All Data</button>
     </div>
 
     <div id="final-area" style="display:none;">
         <h3>Final Teams</h3>
         <div id="results" class="team-grid"></div>
-
         <div class="swap-section">
             <h4 style="margin:0 0 10px 0;">Manual Swap</h4>
             <select id="swapA"></select>
             <select id="swapB"></select>
             <button class="swap-btn" onclick="executeSwap()">Swap & Update Strength</button>
         </div>
-
         <button class="copy-btn" onclick="copyTeams()">📋 Copy Teams for Text</button>
         <button class="replace-btn" onclick="replacePlayerPrompt()">🔄 Replace Player</button>
         <button class="secondary-btn" onclick="backToTiers()">⬅️ Back to Tiers</button>
@@ -93,18 +86,9 @@
         let currentTeams = [[], [], [], []]; 
         const zones = ['player-pool', 't1', 't2', 't3', 't4', 't5', 't6', 't7'];
 
-        // On Page Load: Restore Saved Data
         window.onload = function() {
             const savedRaw = localStorage.getItem('vball_save_state');
-            if (savedRaw) {
-                const data = JSON.parse(savedRaw);
-                document.getElementById('nameInput').value = data.inputText || "";
-                
-                // Reconstruct players into their specific zones
-                data.players.forEach(p => {
-                    createPlayerElement(p.name, p.pts, p.zoneId);
-                });
-            }
+            if (savedRaw) loadFromObject(JSON.parse(savedRaw));
         };
 
         function saveBoard() {
@@ -112,7 +96,6 @@
                 inputText: document.getElementById('nameInput').value,
                 players: []
             };
-
             zones.forEach(zoneId => {
                 const zone = document.getElementById(zoneId);
                 Array.from(zone.children).forEach(el => {
@@ -123,8 +106,14 @@
                     });
                 });
             });
-
             localStorage.setItem('vball_save_state', JSON.stringify(state));
+            return state;
+        }
+
+        function loadFromObject(data) {
+            document.getElementById('nameInput').value = data.inputText || "";
+            zones.forEach(id => document.getElementById(id).innerHTML = "");
+            data.players.forEach(p => createPlayerElement(p.name, p.pts, p.zoneId));
         }
 
         function createPlayerElement(name, pts, zoneId) {
@@ -135,10 +124,8 @@
         }
 
         function updateList() {
-            const pool = document.getElementById('player-pool');
             const currentNames = Array.from(document.querySelectorAll('.player-item span')).map(s => s.innerText.toLowerCase());
             const inputNames = document.getElementById('nameInput').value.split(',').filter(n => n.trim() !== "");
-            
             inputNames.forEach(name => {
                 if (!currentNames.includes(name.trim().toLowerCase())) {
                     createPlayerElement(name.trim(), 1, 'player-pool');
@@ -153,14 +140,31 @@
                 animation: 150,
                 onAdd: function (evt) {
                     const tierPoints = evt.to.parentElement.getAttribute('data-pts');
-                    if (tierPoints) {
-                        evt.item.querySelector('.player-pts').value = tierPoints;
-                    }
+                    if (tierPoints) evt.item.querySelector('.player-pts').value = tierPoints;
                     saveBoard();
                 },
                 onEnd: function() { saveBoard(); }
             });
         });
+
+        function exportData() {
+            const data = saveBoard();
+            const code = btoa(JSON.stringify(data));
+            navigator.clipboard.writeText(code).then(() => {
+                alert("Export code copied! Paste this on your other device.");
+            });
+        }
+
+        function importData() {
+            const code = prompt("Paste your export code here:");
+            if (!code) return;
+            try {
+                const data = JSON.parse(atob(code));
+                loadFromObject(data);
+                saveBoard();
+                alert("Import successful!");
+            } catch (e) { alert("Invalid code."); }
+        }
 
         function clearAllData() {
             if (confirm("Are you sure? This will delete all names, tiers, and ratings.")) {
@@ -182,20 +186,16 @@
                     });
                 });
             }
-
             allPlayers.sort(() => Math.random() - 0.5);
             allPlayers.sort((a, b) => b.pts - a.pts);
-
             currentTeams = [[], [], [], []];
             let teamScores = [0, 0, 0, 0];
-
             allPlayers.forEach(player => {
                 let minScore = Math.min(...teamScores);
                 let teamIdx = teamScores.indexOf(minScore);
                 currentTeams[teamIdx].push({...player});
                 teamScores[teamIdx] += player.pts;
             });
-
             document.getElementById('tier-view').style.display = 'none';
             renderTeams();
         }
@@ -204,21 +204,15 @@
             document.getElementById('final-area').style.display = 'block';
             const resDiv = document.getElementById('results');
             resDiv.innerHTML = '';
-            
             const selectA = document.getElementById('swapA');
             const selectB = document.getElementById('swapB');
             selectA.innerHTML = ''; selectB.innerHTML = '';
-
             currentTeams.forEach((team, i) => {
                 const teamTotal = team.reduce((sum, p) => sum + p.pts, 0);
                 const card = document.createElement('div');
                 card.className = 'team-card';
-                card.innerHTML = `
-                    <b>Team ${i+1}</b> <span class="team-score">${teamTotal.toFixed(1)} pts</span>
-                    <br><small>${team.map(p => `${p.name} (${p.pts})`).join('<br>')}</small>
-                `;
+                card.innerHTML = `<b>Team ${i+1}</b> <span class="team-score">${teamTotal.toFixed(1)} pts</span><br><small>${team.map(p => `${p.name} (${p.pts})`).join('<br>')}</small>`;
                 resDiv.appendChild(card);
-
                 team.forEach(p => {
                     let opt = new Option(`${p.name} (${p.pts} pts)`, p.name);
                     selectA.add(opt.cloneNode(true));
@@ -233,14 +227,12 @@
             const nameB = document.getElementById('swapB').value;
             if (nameA === nameB) return;
             let locA = null, locB = null;
-
             currentTeams.forEach((team, tIdx) => {
                 team.forEach((player, pIdx) => {
                     if (player.name === nameA) locA = { t: tIdx, i: pIdx };
                     if (player.name === nameB) locB = { t: tIdx, i: pIdx };
                 });
             });
-
             if (locA && locB) {
                 const temp = currentTeams[locA.t][locA.i];
                 currentTeams[locA.t][locA.i] = currentTeams[locB.t][locB.i];
@@ -254,7 +246,6 @@
             if (!oldPlayer) return;
             const newPlayer = prompt("Who is the new player?");
             if (!newPlayer) return;
-
             zones.forEach(id => {
                 const list = document.getElementById(id);
                 Array.from(list.children).forEach(item => {
@@ -263,13 +254,11 @@
                     }
                 });
             });
-            
             let names = document.getElementById('nameInput').value.split(',');
             names = names.map(n => n.trim().toLowerCase() === oldPlayer.toLowerCase() ? newPlayer : n.trim());
             document.getElementById('nameInput').value = names.join(', ');
-
             saveBoard();
-            alert("Replaced " + oldPlayer + " with " + newPlayer + ".");
+            alert("Replaced player.");
             backToTiers();
         }
 
@@ -282,10 +271,10 @@
         function copyTeams() {
             let text = "🏐 TONIGHT'S TEAMS 🏐\n\n";
             currentTeams.forEach((team, i) => {
-                const teamTotal = team.reduce((sum, p) => sum + p.pts, 0);
-                text += `TEAM ${i+1} (${teamTotal.toFixed(1)} pts):\n${team.map(p => p.name).join('\n')}\n\n`;
+                // Stripped pts and totals for the text copy
+                text += `TEAM ${i+1}:\n${team.map(p => p.name).join('\n')}\n\n`;
             });
-            navigator.clipboard.writeText(text).then(() => alert("Teams copied!"));
+            navigator.clipboard.writeText(text).then(() => alert("Clean list copied (no ratings)!"));
         }
     </script>
 </body>
