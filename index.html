@@ -41,7 +41,7 @@
 
         .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
         .team-card { background: white; border-top: 4px solid #28a745; padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-height: 100px; }
-        .team-score { font-size: 10px; background: #eee; padding: 2px 5px; border-radius: 4px; float: right; color: #666; }
+        .team-score { font-size: 10px; background: #eee; padding: 2px 5px; border-radius: 4px; float: right; color: #666; font-weight: bold; }
         
         .swap-section { background: #fff; padding: 15px; border-radius: 10px; margin-top: 20px; border: 1px solid #ddd; }
         select { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; font-size: 16px; background: #fff; border: 1px solid #ccc; }
@@ -80,7 +80,7 @@
             <h4 style="margin:0 0 10px 0;">Manual Swap</h4>
             <select id="swapA"></select>
             <select id="swapB"></select>
-            <button class="swap-btn" onclick="executeSwap()">Swap These Two</button>
+            <button class="swap-btn" onclick="executeSwap()">Swap & Update Strength</button>
         </div>
 
         <button class="copy-btn" onclick="copyTeams()">📋 Copy Teams for Text</button>
@@ -89,8 +89,7 @@
     </div>
 
     <script>
-        let currentTeams = [[], [], [], []];
-        let teamScores = [0, 0, 0, 0];
+        let currentTeams = [[], [], [], []]; // Now stores objects: {name, pts}
         const zones = ['player-pool', 't1', 't2', 't3', 't4', 't5', 't6', 't7'];
 
         function updateList() {
@@ -110,7 +109,6 @@
                 group: 'vball', 
                 animation: 150,
                 onAdd: function (evt) {
-                    // Update points automatically when dropped into a tier
                     const tierPoints = evt.to.parentElement.getAttribute('data-pts');
                     if (tierPoints) {
                         evt.item.querySelector('.player-pts').value = tierPoints;
@@ -121,7 +119,6 @@
 
         function generateTeams() {
             let allPlayers = [];
-            // Gather all players and their specific custom points from tiers 1-7
             for(let i=1; i<=7; i++) {
                 const tierDiv = document.getElementById(`t${i}`);
                 Array.from(tierDiv.children).forEach(el => {
@@ -132,20 +129,16 @@
                 });
             }
 
-            // Shuffle and then Sort by Points (Descending)
             allPlayers.sort(() => Math.random() - 0.5);
             allPlayers.sort((a, b) => b.pts - a.pts);
 
-            // Greedy Distribution Logic
             currentTeams = [[], [], [], []];
-            teamScores = [0, 0, 0, 0];
+            let teamScores = [0, 0, 0, 0];
 
             allPlayers.forEach(player => {
-                // Find team with lowest current score
                 let minScore = Math.min(...teamScores);
                 let teamIdx = teamScores.indexOf(minScore);
-
-                currentTeams[teamIdx].push(player.name);
+                currentTeams[teamIdx].push(player);
                 teamScores[teamIdx] += player.pts;
             });
 
@@ -163,13 +156,14 @@
             selectA.innerHTML = ''; selectB.innerHTML = '';
 
             currentTeams.forEach((team, i) => {
+                const teamTotal = team.reduce((sum, p) => sum + p.pts, 0);
                 const card = document.createElement('div');
                 card.className = 'team-card';
-                card.innerHTML = `<b>Team ${i+1}</b> <span class="team-score">${teamScores[i].toFixed(1)}pts</span><br><small>${team.join('<br>') || 'Empty'}</small>`;
+                card.innerHTML = `<b>Team ${i+1}</b> <span class="team-score">${teamTotal.toFixed(1)}pts</span><br><small>${team.map(p => p.name).join('<br>') || 'Empty'}</small>`;
                 resDiv.appendChild(card);
 
                 team.forEach(p => {
-                    let opt = new Option(p, p);
+                    let opt = new Option(`${p.name} (${p.pts}pts)`, p.name);
                     selectA.add(opt.cloneNode(true));
                     selectB.add(opt.cloneNode(true));
                 });
@@ -178,15 +172,24 @@
         }
 
         function executeSwap() {
-            const p1 = document.getElementById('swapA').value;
-            const p2 = document.getElementById('swapB').value;
+            const name1 = document.getElementById('swapA').value;
+            const name2 = document.getElementById('swapB').value;
+            
             let t1, idx1, t2, idx2;
+
+            // Find both players and their objects
             currentTeams.forEach((team, tIdx) => {
-                if(team.indexOf(p1) > -1) { t1 = tIdx; idx1 = team.indexOf(p1); }
-                if(team.indexOf(p2) > -1) { t2 = tIdx; idx2 = team.indexOf(p2); }
+                team.forEach((player, pIdx) => {
+                    if (player.name === name1) { t1 = tIdx; idx1 = pIdx; }
+                    if (player.name === name2) { t2 = tIdx; idx2 = pIdx; }
+                });
             });
-            currentTeams[t1][idx1] = p2;
-            currentTeams[t2][idx2] = p1;
+
+            // Perform the object swap
+            const temp = currentTeams[t1][idx1];
+            currentTeams[t1][idx1] = currentTeams[t2][idx2];
+            currentTeams[t2][idx2] = temp;
+
             renderTeams();
         }
 
@@ -222,7 +225,8 @@
         function copyTeams() {
             let text = "🏐 TONIGHT'S TEAMS 🏐\n\n";
             currentTeams.forEach((team, i) => {
-                text += `TEAM ${i+1} (${teamScores[i].toFixed(1)} pts):\n${team.join('\n')}\n\n`;
+                const teamTotal = team.reduce((sum, p) => sum + p.pts, 0);
+                text += `TEAM ${i+1} (${teamTotal.toFixed(1)} pts):\n${team.map(p => p.name).join('\n')}\n\n`;
             });
             navigator.clipboard.writeText(text).then(() => alert("Teams copied!"));
         }
