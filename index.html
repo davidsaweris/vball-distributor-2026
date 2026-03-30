@@ -6,172 +6,275 @@
     <title>Volleyball Team Balancer</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #f0f2f5; padding: 15px; margin: 0; padding-bottom: 80px; }
-        h2 { text-align: center; color: #1a1a1a; }
+        body { font-family: -apple-system, sans-serif; background: #f0f2f5; padding: 15px; margin: 0; padding-bottom: 50px; }
+        h2 { text-align: center; color: #1a1a1a; margin-bottom: 5px; }
         textarea { width: 100%; height: 60px; border-radius: 8px; border: 1px solid #ccc; padding: 10px; box-sizing: border-box; font-size: 16px; }
         .tier-box { background: white; border: 2px dashed #cbd5e0; border-radius: 10px; min-height: 80px; padding: 10px; margin-bottom: 10px; }
         .tier-box h3 { margin: 0 0 8px 0; font-size: 12px; text-transform: uppercase; color: #718096; }
         .player-item {
-            background: #007aff; color: white; padding: 10px; margin: 5px 0; border-radius: 8px; 
-            font-size: 14px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;
+            background: #007aff; color: white; padding: 10px;
+            margin: 5px 0; border-radius: 8px; cursor: pointer;
+            font-size: 14px; font-weight: bold; touch-action: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .player-pts { width: 45px; background: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.5); color: white; border-radius: 4px; text-align: center; }
+        .player-pts {
+            width: 45px; background: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.5);
+            color: white; border-radius: 4px; padding: 2px; text-align: center; font-size: 12px; font-weight: bold;
+        }
         button { background: #28a745; color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-size: 18px; font-weight: bold; margin: 10px 0; cursor: pointer; }
-        .util-btn { background: #17a2b8; font-size: 14px; margin: 5px 0; }
+        .secondary-btn { background: #6c757d; font-size: 16px; }
         .copy-btn { background: #007aff; }
-        .clear-btn { background: #dc3545; margin-top: 20px; }
+        .replace-btn { background: #d9534f; }
+        .swap-btn { background: #ff9500; margin-top: 10px; }
+        .util-btn { background: #17a2b8; font-size: 14px; margin: 5px 0; }
+        .clear-btn { background: #dc3545; margin-top: 30px; border: 2px solid #a71d2a; }
         .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .team-card { background: white; border-top: 4px solid #28a745; padding: 10px; border-radius: 8px; min-height: 100px; }
-        
-        /* New Permanent Output Area */
-        #output-area { background: #333; color: white; padding: 15px; border-radius: 12px; margin-top: 30px; display: none; }
-        #outputText { width: 100%; height: 150px; background: #eee; color: #000; font-family: monospace; font-size: 14px; margin-top: 10px; }
+        .team-card { background: white; border-top: 4px solid #28a745; padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); min-height: 120px; }
+        .team-score { font-size: 11px; background: #333; color: #fff; padding: 2px 6px; border-radius: 4px; float: right; font-weight: bold; }
+        .swap-section { background: #fff; padding: 15px; border-radius: 10px; margin-top: 20px; border: 1px solid #ddd; }
+        select { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; font-size: 16px; background: #fff; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
 
-    <h2>🏐 Vball Balancer</h2>
+    <h2>🏐 Vball Team Balancer</h2>
 
     <div id="tier-view">
-        <textarea id="nameInput" placeholder="Paste names (comma separated)..." oninput="updateList()"></textarea>
-        <div id="unassigned" class="tier-box" style="margin-top:15px; border-style: solid; border-color: #007aff;">
-            <h3>Unassigned</h3><div id="player-pool"></div>
+        <textarea id="nameInput" placeholder="Paste names here (comma separated)..." oninput="updateList()"></textarea>
+
+        <div id="unassigned" class="tier-box" style="margin-top:20px; border-style: solid; border-color: #007aff;">
+            <h3>Unassigned Players</h3>
+            <div id="player-pool"></div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <div class="tier-box" data-pts="7"><h3>Tier 1 (7)</h3><div id="t1"></div></div>
-            <div class="tier-box" data-pts="6"><h3>Tier 2 (6)</h3><div id="t2"></div></div>
-            <div class="tier-box" data-pts="5"><h3>Tier 3 (5)</h3><div id="t3"></div></div>
-            <div class="tier-box" data-pts="4"><h3>Tier 4 (4)</h3><div id="t4"></div></div>
-            <div class="tier-box" data-pts="3"><h3>Tier 5 (3)</h3><div id="t5"></div></div>
-            <div class="tier-box" data-pts="2"><h3>Tier 6 (2)</h3><div id="t6"></div></div>
+            <div class="tier-box" data-pts="7"><h3>Tier 1 (7pts)</h3><div id="t1"></div></div>
+            <div class="tier-box" data-pts="6"><h3>Tier 2 (6pts)</h3><div id="t2"></div></div>
+            <div class="tier-box" data-pts="5"><h3>Tier 3 (5pts)</h3><div id="t3"></div></div>
+            <div class="tier-box" data-pts="4"><h3>Tier 4 (4pts)</h3><div id="t4"></div></div>
+            <div class="tier-box" data-pts="3"><h3>Tier 5 (3pts)</h3><div id="t5"></div></div>
+            <div class="tier-box" data-pts="2"><h3>Tier 6 (2pts)</h3><div id="t6"></div></div>
         </div>
-        <div class="tier-box" data-pts="1"><h3>Tier 7 (1)</h3><div id="t7"></div></div>
+        <div class="tier-box" data-pts="1"><h3>Tier 7 (1pt)</h3><div id="t7"></div></div>
 
-        <button onclick="generateTeams()">Generate Teams</button>
+        <button onclick="generateTeams()">Generate Balanced Teams</button>
+        
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <button class="util-btn" onclick="exportData()">📤 Export Code</button>
             <button class="util-btn" onclick="importData()">📥 Import Code</button>
         </div>
-        <button class="clear-btn" onclick="clearAllData()">🗑️ Clear Everything</button>
+
+        <button class="clear-btn" onclick="clearAllData()">🗑️ Clear All Data</button>
     </div>
 
     <div id="final-area" style="display:none;">
+        <h3>Final Teams</h3>
         <div id="results" class="team-grid"></div>
-        <button class="copy-btn" onclick="copyTeamsList()">📋 Get Clean Text List</button>
-        <button style="background:#6c757d" onclick="location.reload()">⬅️ Back to Tiers</button>
-    </div>
-
-    <div id="output-area">
-        <h4 id="outputHeader" style="margin:0">Output Area</h4>
-        <p style="font-size:11px; margin:5px 0;">Select and copy the text below:</p>
-        <textarea id="outputText" readonly onclick="this.select()"></textarea>
-        <button style="background:#555; padding:8px; font-size:14px;" onclick="document.getElementById('output-area').style.display='none'">Hide Area</button>
+        <div class="swap-section">
+            <h4 style="margin:0 0 10px 0;">Manual Swap</h4>
+            <select id="swapA"></select>
+            <select id="swapB"></select>
+            <button class="swap-btn" onclick="executeSwap()">Swap & Update Strength</button>
+        </div>
+        <button class="copy-btn" onclick="copyTeams()">📋 Copy Teams for Text</button>
+        <button class="replace-btn" onclick="replacePlayerPrompt()">🔄 Replace Player</button>
+        <button class="secondary-btn" onclick="backToTiers()">⬅️ Back to Tiers</button>
     </div>
 
     <script>
-        let currentTeams = [[],[],[],[]];
-        const zones = ['player-pool','t1','t2','t3','t4','t5','t6','t7'];
+        let currentTeams = [[], [], [], []]; 
+        const zones = ['player-pool', 't1', 't2', 't3', 't4', 't5', 't6', 't7'];
 
         window.onload = function() {
-            const saved = localStorage.getItem('vball_v5');
-            if (saved) loadObj(JSON.parse(saved));
+            const savedRaw = localStorage.getItem('vball_save_state');
+            if (savedRaw) loadFromObject(JSON.parse(savedRaw));
         };
 
-        function save() {
-            const state = { inputText: document.getElementById('nameInput').value, players: [] };
-            zones.forEach(z => {
-                Array.from(document.getElementById(z).children).forEach(el => {
-                    state.players.push({ name: el.querySelector('span').innerText, pts: parseFloat(el.querySelector('.player-pts').value), zoneId: z });
+        function saveBoard() {
+            const state = {
+                inputText: document.getElementById('nameInput').value,
+                players: []
+            };
+            zones.forEach(zoneId => {
+                const zone = document.getElementById(zoneId);
+                Array.from(zone.children).forEach(el => {
+                    state.players.push({
+                        name: el.querySelector('span').innerText,
+                        pts: parseFloat(el.querySelector('.player-pts').value) || 0,
+                        zoneId: zoneId
+                    });
                 });
             });
-            localStorage.setItem('vball_v5', JSON.stringify(state));
+            localStorage.setItem('vball_save_state', JSON.stringify(state));
             return state;
         }
 
-        function loadObj(data) {
+        function loadFromObject(data) {
             document.getElementById('nameInput').value = data.inputText || "";
-            zones.forEach(z => document.getElementById(z).innerHTML = "");
-            data.players.forEach(p => {
-                const div = document.createElement('div');
-                div.className = 'player-item';
-                div.innerHTML = `<span>${p.name}</span><input type="number" step="0.1" value="${p.pts}" class="player-pts" onchange="save()">`;
-                document.getElementById(p.zoneId).appendChild(div);
-            });
+            zones.forEach(id => document.getElementById(id).innerHTML = "");
+            data.players.forEach(p => createPlayerElement(p.name, p.pts, p.zoneId));
+        }
+
+        function createPlayerElement(name, pts, zoneId) {
+            const div = document.createElement('div');
+            div.className = 'player-item';
+            div.innerHTML = `<span>${name}</span><input type="number" step="0.1" value="${pts}" class="player-pts" onchange="saveBoard()">`;
+            document.getElementById(zoneId).appendChild(div);
         }
 
         function updateList() {
-            const current = Array.from(document.querySelectorAll('.player-item span')).map(s => s.innerText.toLowerCase());
-            const input = document.getElementById('nameInput').value.split(',').filter(n => n.trim() !== "");
-            input.forEach(n => {
-                if (!current.includes(n.trim().toLowerCase())) {
-                    const div = document.createElement('div');
-                    div.className = 'player-item';
-                    div.innerHTML = `<span>${n.trim()}</span><input type="number" step="0.1" value="1" class="player-pts" onchange="save()">`;
-                    document.getElementById('player-pool').appendChild(div);
+            const currentNames = Array.from(document.querySelectorAll('.player-item span')).map(s => s.innerText.toLowerCase());
+            const inputNames = document.getElementById('nameInput').value.split(',').filter(n => n.trim() !== "");
+            inputNames.forEach(name => {
+                if (!currentNames.includes(name.trim().toLowerCase())) {
+                    createPlayerElement(name.trim(), 1, 'player-pool');
                 }
             });
-            save();
+            saveBoard();
         }
 
         zones.forEach(id => {
-            new Sortable(document.getElementById(id), { group: 'vball', animation: 150, onEnd: save });
+            new Sortable(document.getElementById(id), { 
+                group: 'vball', 
+                animation: 150,
+                onAdd: function (evt) {
+                    const tierPoints = evt.to.parentElement.getAttribute('data-pts');
+                    if (tierPoints) evt.item.querySelector('.player-pts').value = tierPoints;
+                    saveBoard();
+                },
+                onEnd: function() { saveBoard(); }
+            });
         });
 
         function exportData() {
-            const code = btoa(JSON.stringify(save()));
-            document.getElementById('outputHeader').innerText = "📤 Export Code Below";
-            document.getElementById('outputText').value = code;
-            document.getElementById('output-area').style.display = 'block';
-            window.scrollTo(0, document.body.scrollHeight);
-        }
-
-        function copyTeamsList() {
-            let txt = "🏐 TONIGHT'S TEAMS 🏐\n\n";
-            currentTeams.forEach((t, i) => {
-                txt += `TEAM ${i+1}:\n${t.map(p => p.name).join('\n')}\n\n`;
+            const data = saveBoard();
+            const code = btoa(JSON.stringify(data));
+            navigator.clipboard.writeText(code).then(() => {
+                alert("Export code copied! Paste this on your other device.");
             });
-            document.getElementById('outputHeader').innerText = "📋 Clean Team List Below";
-            document.getElementById('outputText').value = txt;
-            document.getElementById('output-area').style.display = 'block';
-            window.scrollTo(0, document.body.scrollHeight);
         }
 
         function importData() {
-            const code = prompt("Paste code:");
-            if (code) { 
-                try { loadObj(JSON.parse(atob(code))); save(); alert("Done!"); } 
-                catch(e) { alert("Error"); }
+            const code = prompt("Paste your export code here:");
+            if (!code) return;
+            try {
+                const data = JSON.parse(atob(code));
+                loadFromObject(data);
+                saveBoard();
+                alert("Import successful!");
+            } catch (e) { alert("Invalid code."); }
+        }
+
+        function clearAllData() {
+            if (confirm("Are you sure? This will delete all names, tiers, and ratings.")) {
+                localStorage.removeItem('vball_save_state');
+                document.getElementById('nameInput').value = "";
+                zones.forEach(id => document.getElementById(id).innerHTML = "");
+                alert("Data cleared.");
             }
         }
 
-        function clearAllData() { if(confirm("Clear all?")) { localStorage.removeItem('vball_v5'); location.reload(); } }
-
         function generateTeams() {
-            let players = [];
+            let allPlayers = [];
             for(let i=1; i<=7; i++) {
-                Array.from(document.getElementById('t'+i).children).forEach(el => {
-                    players.push({ name: el.querySelector('span').innerText, pts: parseFloat(el.querySelector('.player-pts').value) });
+                const tierDiv = document.getElementById(`t${i}`);
+                Array.from(tierDiv.children).forEach(el => {
+                    allPlayers.push({
+                        name: el.querySelector('span').innerText,
+                        pts: parseFloat(el.querySelector('.player-pts').value) || 0
+                    });
                 });
             }
-            players.sort(() => Math.random() - 0.5).sort((a,b) => b.pts - a.pts);
-            currentTeams = [[],[],[],[]];
-            let scores = [0,0,0,0];
-            players.forEach(p => {
-                let idx = scores.indexOf(Math.min(...scores));
-                currentTeams[idx].push(p);
-                scores[idx] += p.pts;
+            allPlayers.sort(() => Math.random() - 0.5);
+            allPlayers.sort((a, b) => b.pts - a.pts);
+            currentTeams = [[], [], [], []];
+            let teamScores = [0, 0, 0, 0];
+            allPlayers.forEach(player => {
+                let minScore = Math.min(...teamScores);
+                let teamIdx = teamScores.indexOf(minScore);
+                currentTeams[teamIdx].push({...player});
+                teamScores[teamIdx] += player.pts;
             });
             document.getElementById('tier-view').style.display = 'none';
+            renderTeams();
+        }
+
+        function renderTeams() {
             document.getElementById('final-area').style.display = 'block';
-            const res = document.getElementById('results');
-            res.innerHTML = '';
-            currentTeams.forEach((t, i) => {
+            const resDiv = document.getElementById('results');
+            resDiv.innerHTML = '';
+            const selectA = document.getElementById('swapA');
+            const selectB = document.getElementById('swapB');
+            selectA.innerHTML = ''; selectB.innerHTML = '';
+            currentTeams.forEach((team, i) => {
+                const teamTotal = team.reduce((sum, p) => sum + p.pts, 0);
                 const card = document.createElement('div');
                 card.className = 'team-card';
-                card.innerHTML = `<b>Team ${i+1}</b><br><small>${t.map(p => p.name).join('<br>')}</small>`;
-                res.appendChild(card);
+                card.innerHTML = `<b>Team ${i+1}</b> <span class="team-score">${teamTotal.toFixed(1)} pts</span><br><small>${team.map(p => `${p.name} (${p.pts})`).join('<br>')}</small>`;
+                resDiv.appendChild(card);
+                team.forEach(p => {
+                    let opt = new Option(`${p.name} (${p.pts} pts)`, p.name);
+                    selectA.add(opt.cloneNode(true));
+                    selectB.add(opt.cloneNode(true));
+                });
             });
+            window.scrollTo(0, 0);
+        }
+
+        function executeSwap() {
+            const nameA = document.getElementById('swapA').value;
+            const nameB = document.getElementById('swapB').value;
+            if (nameA === nameB) return;
+            let locA = null, locB = null;
+            currentTeams.forEach((team, tIdx) => {
+                team.forEach((player, pIdx) => {
+                    if (player.name === nameA) locA = { t: tIdx, i: pIdx };
+                    if (player.name === nameB) locB = { t: tIdx, i: pIdx };
+                });
+            });
+            if (locA && locB) {
+                const temp = currentTeams[locA.t][locA.i];
+                currentTeams[locA.t][locA.i] = currentTeams[locB.t][locB.i];
+                currentTeams[locB.t][locB.i] = temp;
+                renderTeams();
+            }
+        }
+
+        function replacePlayerPrompt() {
+            const oldPlayer = prompt("Who is leaving?");
+            if (!oldPlayer) return;
+            const newPlayer = prompt("Who is the new player?");
+            if (!newPlayer) return;
+            zones.forEach(id => {
+                const list = document.getElementById(id);
+                Array.from(list.children).forEach(item => {
+                    if (item.querySelector('span').innerText.toLowerCase() === oldPlayer.toLowerCase()) {
+                        item.querySelector('span').innerText = newPlayer;
+                    }
+                });
+            });
+            let names = document.getElementById('nameInput').value.split(',');
+            names = names.map(n => n.trim().toLowerCase() === oldPlayer.toLowerCase() ? newPlayer : n.trim());
+            document.getElementById('nameInput').value = names.join(', ');
+            saveBoard();
+            alert("Replaced player.");
+            backToTiers();
+        }
+
+        function backToTiers() {
+            document.getElementById('final-area').style.display = 'none';
+            document.getElementById('tier-view').style.display = 'block';
+            window.scrollTo(0, 0);
+        }
+
+        function copyTeams() {
+            let text = "🏐 TONIGHT'S TEAMS 🏐\n\n";
+            currentTeams.forEach((team, i) => {
+                // Stripped pts and totals for the text copy
+                text += `TEAM ${i+1}:\n${team.map(p => p.name).join('\n')}\n\n`;
+            });
+            navigator.clipboard.writeText(text).then(() => alert("Clean list copied (no ratings)!"));
         }
     </script>
 </body>
